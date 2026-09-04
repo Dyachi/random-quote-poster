@@ -1,4 +1,41 @@
 {
-  "scheduled_slots": [],
-  "scheduled_posts": {}
+  "scheduled_slots": [
+    "2026-09-05T12:00:00+08:00",
+    "2026-09-06T12:00:00+08:00",
+    "2026-09-07T12:00:00+08:00",
+    "2026-09-08T12:00:00+08:00",
+    "2026-09-09T12:00:00+08:00",
+    "2026-09-10T12:00:00+08:00",
+    "2026-09-11T12:00:00+08:00"
+  ],
+  "scheduled_posts": {
+    "2026-09-05T12:00:00+08:00": {
+      "scheduled_id": "2095804085718945792",
+      "quote": "You know you too can be part of the prophecy."
+    },
+    "2026-09-06T12:00:00+08:00": {
+      "scheduled_id": "2095804088000880640",
+      "quote": "You're not Indexa!"
+    },
+    "2026-09-07T12:00:00+08:00": {
+      "scheduled_id": "2095804091079221248",
+      "quote": "Uh, yeah! Yeah, yeah, yeah. Totally."
+    },
+    "2026-09-08T12:00:00+08:00": {
+      "scheduled_id": "2095804093340200960",
+      "quote": "the terrifying Ringalus."
+    },
+    "2026-09-09T12:00:00+08:00": {
+      "scheduled_id": "2095804095676526592",
+      "quote": "Okay... And what exactly do you have in mind?"
+    },
+    "2026-09-10T12:00:00+08:00": {
+      "scheduled_id": "2095804098058813440",
+      "quote": "But... I didn't have a choice, I..."
+    },
+    "2026-09-11T12:00:00+08:00": {
+      "scheduled_id": "2095804100315332608",
+      "quote": "It is of the utmost importance that we get there as soon as possible."
+    }
+  }
 }
