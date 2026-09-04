@@ -591,7 +591,7 @@ def generate_schedule_times(
         ahead_days = int(
             settings.get(
                 "schedule_ahead_days",
-                7
+                1
             )
         )
 
