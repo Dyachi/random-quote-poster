@@ -1,7 +1,7 @@
 {
     "mode": "daily",
     "times": [
-        "12:00"
+        "10:00"
     ],
     "weekly_days": [
         "Monday",
@@ -20,5 +20,5 @@
     "random_interval_min_minutes": 240,
     "random_interval_max_minutes": 480,
     "timezone": "Asia/Taipei",
-    "schedule_ahead_days": 7
+    "schedule_ahead_days": 1
 }
