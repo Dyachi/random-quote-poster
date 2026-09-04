@@ -1,1 +1,11 @@
-{}
+{
+  "scheduled_slots": [
+    "2026-09-05T10:00:00+08:00"
+  ],
+  "scheduled_posts": {
+    "2026-09-05T10:00:00+08:00": {
+      "scheduled_id": "2095906118828462083",
+      "quote": "An immortal with a death wish?"
+    }
+  }
+}
