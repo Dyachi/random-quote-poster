@@ -40,17 +40,6 @@ jobs:
           mkdir -p ~/.config/tweetkit
           printf '%s\n' "$X_COOKIE" > ~/.config/tweetkit/cookie.txt
           chmod 600 ~/.config/tweetkit/cookie.txt
-          
-          printf 'auth_token=%s; ct0=%s; twid=%s; kdt=%s; guest_id=%s; personalization_id=%s\n' \
-            "$X_AUTH_TOKEN" \
-            "$X_CT0" \
-            "$X_TWID" \
-            "$X_KDT" \
-            "$X_GUEST_ID" \
-            "$X_PERSONALIZATION_ID" \
-            > ~/.config/tweetkit/cookie.txt
-        
-          chmod 600 ~/.config/tweetkit/cookie.txt
 
       - name: Check X login
         run: |
