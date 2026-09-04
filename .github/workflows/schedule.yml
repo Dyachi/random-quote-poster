@@ -4,7 +4,7 @@ on:
   schedule:
     # 每天北京时间 00:05 运行
     # 台湾 UTC+8，所以这里是 16:05 UTC
-    - cron: "5 8 * * *"
+    - cron: "30 8 * * *"
 
   workflow_dispatch:
 
