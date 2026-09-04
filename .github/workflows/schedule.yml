@@ -1,20 +1,62 @@
-name: Schedule Test
+name: Random Quote Scheduler
 
 on:
-  push:
-  schedule:
-    - cron: "*/5 * * * *"
+  repository_dispatch:
+    types: [schedule_quotes]
+
   workflow_dispatch:
 
+permissions:
+  contents: write
+
+concurrency:
+  group: random-quote-scheduler
+  cancel-in-progress: false
+
 jobs:
-  test:
+  schedule-quotes:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Test trigger
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install tweetkit-x
         run: |
-          echo "==================================="
-          echo "WORKFLOW TRIGGERED"
-          echo "Event: ${{ github.event_name }}"
-          echo "Time: $(date -u)"
-          echo "==================================="
+          python -m pip install --upgrade pip
+          pip install tweetkit-x
+
+      - name: Configure X session
+        env:
+          X_COOKIE: ${{ secrets.X_COOKIE }}
+        run: |
+          mkdir -p ~/.config/tweetkit
+          printf '%s\n' "$X_COOKIE" > ~/.config/tweetkit/cookie.txt
+          chmod 600 ~/.config/tweetkit/cookie.txt
+
+      - name: Check X login
+        run: |
+          tweetkit whoami
+
+      - name: Schedule random quotes
+        run: |
+          python quote_poster.py
+
+      - name: Save schedule state
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add quote_schedule_state.json
+
+          if git diff --cached --quiet; then
+            echo "没有新的 state 修改，不需要提交。"
+          else
+            git commit -m "Update quote schedule state"
+            git push
+          fi
