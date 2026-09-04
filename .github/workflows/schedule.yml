@@ -37,9 +37,22 @@ jobs:
         env:
           X_AUTH_TOKEN: ${{ secrets.X_AUTH_TOKEN }}
           X_CT0: ${{ secrets.X_CT0 }}
+          X_TWID: ${{ secrets.TWID }}
+          X_KDT: ${{ secrets.KDT }}
+          X_GUEST_ID: ${{ secrets.GUEST_ID }}
+          X_PERSONALIZATION_ID: ${{ secrets.PERSONALIZATION_ID }}
         run: |
           mkdir -p ~/.config/tweetkit
-          printf 'auth_token=%s; ct0=%s\n' "$X_AUTH_TOKEN" "$X_CT0" > ~/.config/tweetkit/cookie.txt
+          
+          printf 'auth_token=%s; ct0=%s; twid=%s; kdt=%s; guest_id=%s; personalization_id=%s\n' \
+            "$X_AUTH_TOKEN" \
+            "$X_CT0" \
+            "$X_TWID" \
+            "$X_KDT" \
+            "$X_GUEST_ID" \
+            "$X_PERSONALIZATION_ID" \
+            > ~/.config/tweetkit/cookie.txt
+        
           chmod 600 ~/.config/tweetkit/cookie.txt
 
       - name: Check X login
