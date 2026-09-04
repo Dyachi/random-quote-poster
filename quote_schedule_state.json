@@ -1,41 +1,4 @@
 {
-  "scheduled_slots": [
-    "2026-09-05T12:00:00+08:00",
-    "2026-09-06T12:00:00+08:00",
-    "2026-09-07T12:00:00+08:00",
-    "2026-09-08T12:00:00+08:00",
-    "2026-09-09T12:00:00+08:00",
-    "2026-09-10T12:00:00+08:00",
-    "2026-09-11T12:00:00+08:00"
-  ],
-  "scheduled_posts": {
-    "2026-09-05T12:00:00+08:00": {
-      "scheduled_id": "2095572419666980864",
-      "quote": "The world has changed, Miss Indexa."
-    },
-    "2026-09-06T12:00:00+08:00": {
-      "scheduled_id": "2095579561442631680",
-      "quote": "YOU ARE NOT MY FAMILY!!!"
-    },
-    "2026-09-07T12:00:00+08:00": {
-      "scheduled_id": "2095769287344664576",
-      "quote": "Get your copy of the prophecy! Join the Guardians of Truth!"
-    },
-    "2026-09-08T12:00:00+08:00": {
-      "scheduled_id": "2095769290905722880",
-      "quote": "Because, it's the rule. It's forbidden to mention the Sword of Truth within its Grounds."
-    },
-    "2026-09-09T12:00:00+08:00": {
-      "scheduled_id": "2095769294516928512",
-      "quote": "I suggest a carefully crafted break-in plan, focusing on: Discretion!"
-    },
-    "2026-09-10T12:00:00+08:00": {
-      "scheduled_id": "2095769298203774976",
-      "quote": "Ground approaching!"
-    },
-    "2026-09-11T12:00:00+08:00": {
-      "scheduled_id": "2095769301823418368",
-      "quote": "but...a terrible plague sieged the kingdom."
-    }
-  }
+  "scheduled_slots": [],
+  "scheduled_posts": {}
 }
