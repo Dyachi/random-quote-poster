@@ -28,7 +28,11 @@ def load_settings():
             f"找不到 settings.json：\n{SETTINGS_FILE}"
         )
 
-    with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
+    with open(
+        SETTINGS_FILE,
+        "r",
+        encoding="utf-8"
+    ) as f:
         return json.load(f)
 
 
@@ -38,7 +42,16 @@ def load_settings():
 
 def load_quotes():
 
-    with open(QUOTES_FILE, "r", encoding="utf-8") as f:
+    if not QUOTES_FILE.exists():
+        raise RuntimeError(
+            f"找不到 quotes.json：\n{QUOTES_FILE}"
+        )
+
+    with open(
+        QUOTES_FILE,
+        "r",
+        encoding="utf-8"
+    ) as f:
         data = json.load(f)
 
     quotes = data["origin"]
@@ -63,18 +76,33 @@ def load_state():
             "scheduled_posts": {}
         }
 
-    with open(STATE_FILE, "r", encoding="utf-8") as f:
+    with open(
+        STATE_FILE,
+        "r",
+        encoding="utf-8"
+    ) as f:
         state = json.load(f)
 
-    state.setdefault("scheduled_slots", [])
-    state.setdefault("scheduled_posts", {})
+    state.setdefault(
+        "scheduled_slots",
+        []
+    )
+
+    state.setdefault(
+        "scheduled_posts",
+        {}
+    )
 
     return state
 
 
 def save_state(state):
 
-    with open(STATE_FILE, "w", encoding="utf-8") as f:
+    with open(
+        STATE_FILE,
+        "w",
+        encoding="utf-8"
+    ) as f:
         json.dump(
             state,
             f,
@@ -99,12 +127,16 @@ def cleanup_old_state(state, now):
     for slot_id, info in scheduled_posts.items():
 
         try:
-            slot_dt = datetime.fromisoformat(slot_id)
+
+            slot_dt = datetime.fromisoformat(
+                slot_id
+            )
 
             if slot_dt > now:
                 remaining[slot_id] = info
 
         except Exception:
+
             # 无法解析的旧数据直接保留
             remaining[slot_id] = info
 
@@ -121,7 +153,9 @@ def cleanup_old_state(state, now):
 
 def schedule_tweet(text, dt):
 
-    timestamp = int(dt.timestamp())
+    timestamp = int(
+        dt.timestamp()
+    )
 
     result = subprocess.run(
         [
@@ -141,25 +175,35 @@ def schedule_tweet(text, dt):
         print("❌ 排程失败")
 
         if result.stderr.strip():
-            print(result.stderr.strip())
+            print(
+                result.stderr.strip()
+            )
 
         return None
 
     if not result.stdout.strip():
 
-        print("⚠️ tweetkit 没有返回结果。")
+        print(
+            "⚠️ tweetkit 没有返回结果。"
+        )
 
         return None
 
     try:
+
         data = json.loads(
             result.stdout
         )
 
     except json.JSONDecodeError:
 
-        print("⚠️ 无法解析 tweetkit 返回的数据：")
-        print(result.stdout)
+        print(
+            "⚠️ 无法解析 tweetkit 返回的数据："
+        )
+
+        print(
+            result.stdout
+        )
 
         return None
 
@@ -169,18 +213,26 @@ def schedule_tweet(text, dt):
 
     if not scheduled_id:
 
-        print("⚠️ 没有获得 scheduled_id：")
-        print(result.stdout)
+        print(
+            "⚠️ 没有获得 scheduled_id："
+        )
+
+        print(
+            result.stdout
+        )
 
         return None
 
     print("✅ 排程成功")
+
     print(
         f"   时间：{dt.strftime('%Y-%m-%d %H:%M:%S')}"
     )
+
     print(
         f"   内容：{text}"
     )
+
     print(
         f"   ID：{scheduled_id}"
     )
@@ -192,7 +244,11 @@ def schedule_tweet(text, dt):
 # 时间解析
 # ============================================================
 
-def make_datetime(date_obj, time_string, timezone):
+def make_datetime(
+    date_obj,
+    time_string,
+    timezone
+):
 
     hour, minute = map(
         int,
@@ -214,7 +270,11 @@ def make_datetime(date_obj, time_string, timezone):
 # 每日模式
 # ============================================================
 
-def generate_daily(settings, now, end_time):
+def generate_daily(
+    settings,
+    now,
+    end_time
+):
 
     timezone = ZoneInfo(
         settings["timezone"]
@@ -242,7 +302,9 @@ def generate_daily(settings, now, end_time):
             if now < dt <= end_time:
                 result.append(dt)
 
-        current_date += timedelta(days=1)
+        current_date += timedelta(
+            days=1
+        )
 
     return result
 
@@ -251,7 +313,11 @@ def generate_daily(settings, now, end_time):
 # 每周模式
 # ============================================================
 
-def generate_weekly(settings, now, end_time):
+def generate_weekly(
+    settings,
+    now,
+    end_time
+):
 
     timezone = ZoneInfo(
         settings["timezone"]
@@ -290,7 +356,9 @@ def generate_weekly(settings, now, end_time):
                 if now < dt <= end_time:
                     result.append(dt)
 
-        current_date += timedelta(days=1)
+        current_date += timedelta(
+            days=1
+        )
 
     return result
 
@@ -299,7 +367,11 @@ def generate_weekly(settings, now, end_time):
 # 每月模式
 # ============================================================
 
-def generate_monthly(settings, now, end_time):
+def generate_monthly(
+    settings,
+    now,
+    end_time
+):
 
     timezone = ZoneInfo(
         settings["timezone"]
@@ -334,7 +406,9 @@ def generate_monthly(settings, now, end_time):
                 if now < dt <= end_time:
                     result.append(dt)
 
-        current_date += timedelta(days=1)
+        current_date += timedelta(
+            days=1
+        )
 
     return result
 
@@ -343,7 +417,11 @@ def generate_monthly(settings, now, end_time):
 # 每年模式
 # ============================================================
 
-def generate_yearly(settings, now, end_time):
+def generate_yearly(
+    settings,
+    now,
+    end_time
+):
 
     timezone = ZoneInfo(
         settings["timezone"]
@@ -382,7 +460,9 @@ def generate_yearly(settings, now, end_time):
                 if now < dt <= end_time:
                     result.append(dt)
 
-        current_date += timedelta(days=1)
+        current_date += timedelta(
+            days=1
+        )
 
     return result
 
@@ -391,7 +471,11 @@ def generate_yearly(settings, now, end_time):
 # 固定间隔模式
 # ============================================================
 
-def generate_interval(settings, now, end_time):
+def generate_interval(
+    settings,
+    now,
+    end_time
+):
 
     interval_minutes = int(
         settings.get(
@@ -401,6 +485,7 @@ def generate_interval(settings, now, end_time):
     )
 
     if interval_minutes <= 0:
+
         raise RuntimeError(
             "interval_minutes 必须大于 0。"
         )
@@ -452,11 +537,13 @@ def generate_random_interval(
     )
 
     if minimum <= 0:
+
         raise RuntimeError(
             "random_interval_min_minutes 必须大于 0。"
         )
 
     if maximum < minimum:
+
         raise RuntimeError(
             "random_interval_max_minutes 不能小于最小值。"
         )
@@ -500,92 +587,22 @@ def generate_schedule_times(
 ):
 
     if ahead_days is None:
+
         ahead_days = int(
             settings.get(
                 "schedule_ahead_days",
                 7
             )
         )
+
     else:
-        ahead_days = int(ahead_days)
 
-    if ahead_days <= 0:
-        raise RuntimeError(
-            "排程天数必须大于 0。"
-        )
-
-    end_time = now + timedelta(
-        days=ahead_days
-    )
-
-    mode = settings.get(
-        "mode",
-        "daily"
-    )
-
-    if mode == "daily":
-
-        return generate_daily(
-            settings,
-            now,
-            end_time
-        )
-
-    if mode == "weekly":
-
-        return generate_weekly(
-            settings,
-            now,
-            end_time
-        )
-
-    if mode == "monthly":
-
-        return generate_monthly(
-            settings,
-            now,
-            end_time
-        )
-
-    if mode == "yearly":
-
-        return generate_yearly(
-            settings,
-            now,
-            end_time
-        )
-
-    if mode == "interval":
-
-        return generate_interval(
-            settings,
-            now,
-            end_time
-        )
-
-    if mode == "random_interval":
-
-        return generate_random_interval(
-            settings,
-            now,
-            end_time
-        )
-
-    raise RuntimeError(
-        f"未知的 mode：{mode}"
-    )
-
-    if ahead_days is None:
         ahead_days = int(
-            settings.get(
-                "schedule_ahead_days",
-                7
-            )
+            ahead_days
         )
-    else:
-        ahead_days = int(ahead_days)
 
     if ahead_days <= 0:
+
         raise RuntimeError(
             "排程天数必须大于 0。"
         )
@@ -656,10 +673,14 @@ def generate_schedule_times(
 # 开始排程
 # ============================================================
 
-def schedule_future_quotes(ahead_days=None):
+def schedule_future_quotes(
+    ahead_days=None
+):
 
     settings = load_settings()
+
     quotes = load_quotes()
+
     state = load_state()
 
     timezone = ZoneInfo(
@@ -670,13 +691,18 @@ def schedule_future_quotes(ahead_days=None):
         timezone
     )
 
+    # --------------------------------------------------------
     # 清理已经过去的记录
+    # --------------------------------------------------------
+
     cleanup_old_state(
         state,
         now
     )
 
-    save_state(state)
+    save_state(
+        state
+    )
 
     scheduled_slots = set(
         state.get(
@@ -706,11 +732,25 @@ def schedule_future_quotes(ahead_days=None):
         f"未来排程数量：{len(schedule_times)}"
     )
 
+    created_count = 0
+
+    skipped_count = 0
+
+    failed_count = 0
+
+    # --------------------------------------------------------
+    # 创建排程
+    # --------------------------------------------------------
+
     for post_dt in schedule_times:
 
         slot_id = post_dt.isoformat()
 
+        # 已经存在的排程直接跳过
         if slot_id in scheduled_slots:
+
+            skipped_count += 1
+
             continue
 
         quote = random.choice(
@@ -718,10 +758,14 @@ def schedule_future_quotes(ahead_days=None):
         )
 
         print()
-        print("-----------------------------------")
+        print(
+            "-----------------------------------"
+        )
+
         print(
             f"准备排程：{post_dt.strftime('%Y-%m-%d %H:%M:%S')}"
         )
+
         print(
             f"随机语录：{quote}"
         )
@@ -732,6 +776,8 @@ def schedule_future_quotes(ahead_days=None):
         )
 
         if scheduled_id:
+
+            created_count += 1
 
             scheduled_slots.add(
                 slot_id
@@ -746,7 +792,55 @@ def schedule_future_quotes(ahead_days=None):
                 "quote": quote
             }
 
-            save_state(state)
+            # 每成功创建一个就保存一次
+            save_state(
+                state
+            )
+
+        else:
+
+            failed_count += 1
+
+    # --------------------------------------------------------
+    # 最终保存
+    # --------------------------------------------------------
+
+    state["scheduled_slots"] = sorted(
+        scheduled_slots
+    )
+
+    save_state(
+        state
+    )
+
+    print()
+    print(
+        "==================================="
+    )
+    print(
+        "排程处理完成"
+    )
+    print(
+        "==================================="
+    )
+
+    print(
+        f"候选时间：{len(schedule_times)}"
+    )
+
+    print(
+        f"新建排程：{created_count}"
+    )
+
+    print(
+        f"已有排程：{skipped_count}"
+    )
+
+    print(
+        f"失败排程：{failed_count}"
+    )
+
+    print()
 
 
 # ============================================================
@@ -756,25 +850,47 @@ def schedule_future_quotes(ahead_days=None):
 if __name__ == "__main__":
 
     print()
-    print("===================================")
-    print("       RANDOM QUOTE POSTER")
-    print("===================================")
+    print(
+        "==================================="
+    )
+
+    print(
+        "       RANDOM QUOTE POSTER"
+    )
+
+    print(
+        "==================================="
+    )
+
     print()
 
     try:
 
         schedule_future_quotes()
 
-        print()
-        print("===================================")
-        print("全部排程处理完成。")
-        print("===================================")
+        print(
+            "==================================="
+        )
+
+        print(
+            "全部排程处理完成。"
+        )
+
+        print(
+            "==================================="
+        )
 
     except Exception as e:
 
         print()
-        print("❌ 程序发生错误：")
-        print(e)
 
-    print()
-    input("按 Enter 键退出...")
+        print(
+            "❌ 程序发生错误："
+        )
+
+        print(
+            e
+        )
+
+        # 让 GitHub Actions 正确识别为失败
+        raise
