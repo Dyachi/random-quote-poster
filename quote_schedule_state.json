@@ -1,1 +1,41 @@
-{}
+{
+  "scheduled_slots": [
+    "2026-09-05T12:00:00+08:00",
+    "2026-09-06T12:00:00+08:00",
+    "2026-09-07T12:00:00+08:00",
+    "2026-09-08T12:00:00+08:00",
+    "2026-09-09T12:00:00+08:00",
+    "2026-09-10T12:00:00+08:00",
+    "2026-09-11T12:00:00+08:00"
+  ],
+  "scheduled_posts": {
+    "2026-09-05T12:00:00+08:00": {
+      "scheduled_id": "2095893906609041412",
+      "quote": "The last finger."
+    },
+    "2026-09-06T12:00:00+08:00": {
+      "scheduled_id": "2095893910031626241",
+      "quote": "Don't you get it?"
+    },
+    "2026-09-07T12:00:00+08:00": {
+      "scheduled_id": "2095893913450020871",
+      "quote": "This bar, my stump... I'm getting a feeling of déjà vu!"
+    },
+    "2026-09-08T12:00:00+08:00": {
+      "scheduled_id": "2095893916838924293",
+      "quote": "Well, yes and no. Technically, I haven't graduated yet."
+    },
+    "2026-09-09T12:00:00+08:00": {
+      "scheduled_id": "2095893920227950592",
+      "quote": "The way is clear."
+    },
+    "2026-09-10T12:00:00+08:00": {
+      "scheduled_id": "2095893924925579267",
+      "quote": "I pack his bag, his snack, then I have to fill out the quest log."
+    },
+    "2026-09-11T12:00:00+08:00": {
+      "scheduled_id": "2095893928272691206",
+      "quote": "Oops."
+    }
+  }
+}
