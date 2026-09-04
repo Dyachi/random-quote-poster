@@ -1,0 +1,24 @@
+{
+    "mode": "daily",
+    "times": [
+        "12:00"
+    ],
+    "weekly_days": [
+        "Monday",
+        "Wednesday",
+        "Friday"
+    ],
+    "monthly_days": [
+        1,
+        15
+    ],
+    "yearly_dates": [
+        "01-01",
+        "12-25"
+    ],
+    "interval_minutes": 360,
+    "random_interval_min_minutes": 240,
+    "random_interval_max_minutes": 480,
+    "timezone": "Asia/Taipei",
+    "schedule_ahead_days": 7
+}
