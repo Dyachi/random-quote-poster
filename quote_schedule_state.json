@@ -1,0 +1,21 @@
+{
+  "scheduled_slots": [
+    "2026-09-04T12:00:00+08:00",
+    "2026-09-05T12:00:00+08:00",
+    "2026-09-06T12:00:00+08:00"
+  ],
+  "scheduled_posts": {
+    "2026-09-04T12:00:00+08:00": {
+      "scheduled_id": "2095572409613156353",
+      "quote": "Okay, just shut up now."
+    },
+    "2026-09-05T12:00:00+08:00": {
+      "scheduled_id": "2095572419666980864",
+      "quote": "The world has changed, Miss Indexa."
+    },
+    "2026-09-06T12:00:00+08:00": {
+      "scheduled_id": "2095579561442631680",
+      "quote": "YOU ARE NOT MY FAMILY!!!"
+    }
+  }
+}
