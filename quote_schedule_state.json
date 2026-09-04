@@ -1,12 +1,7 @@
 {
   "scheduled_slots": [
     "2026-09-05T12:00:00+08:00",
-    "2026-09-06T12:00:00+08:00",
-    "2026-09-07T12:00:00+08:00",
-    "2026-09-08T12:00:00+08:00",
-    "2026-09-09T12:00:00+08:00",
-    "2026-09-10T12:00:00+08:00",
-    "2026-09-11T12:00:00+08:00"
+    "2026-09-06T12:00:00+08:00"
   ],
   "scheduled_posts": {
     "2026-09-05T12:00:00+08:00": {
@@ -16,26 +11,6 @@
     "2026-09-06T12:00:00+08:00": {
       "scheduled_id": "2095579561442631680",
       "quote": "YOU ARE NOT MY FAMILY!!!"
-    },
-    "2026-09-07T12:00:00+08:00": {
-      "scheduled_id": "2095756034778308609",
-      "quote": "Well, the team is ready to go, so let's do this, right?"
-    },
-    "2026-09-08T12:00:00+08:00": {
-      "scheduled_id": "2095756038305689602",
-      "quote": "What?"
-    },
-    "2026-09-09T12:00:00+08:00": {
-      "scheduled_id": "2095756041904398336",
-      "quote": "We'll have the house beer. Half pints... Two."
-    },
-    "2026-09-10T12:00:00+08:00": {
-      "scheduled_id": "2095756045268221955",
-      "quote": "Truth thou shalt ever speak. Lest death clouds make thee shriek."
-    },
-    "2026-09-11T12:00:00+08:00": {
-      "scheduled_id": "2095756048455827461",
-      "quote": "No, that's not it, I didn't mean to..."
     }
   }
 }
