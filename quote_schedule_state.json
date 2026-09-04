@@ -1,1 +1,11 @@
-{}
+{
+  "scheduled_slots": [
+    "2026-09-05T10:00:00+08:00"
+  ],
+  "scheduled_posts": {
+    "2026-09-05T10:00:00+08:00": {
+      "scheduled_id": "2095895209724739585",
+      "quote": "The future of the world depends on my victory!"
+    }
+  }
+}
