@@ -23,11 +23,10 @@ jobs:
 
       - name: Configure X session
         env:
-          X_AUTH_TOKEN: ${{ secrets.X_AUTH_TOKEN }}
-          X_CT0: ${{ secrets.X_CT0 }}
+          X_COOKIE: ${{ secrets.X_COOKIE }}
         run: |
           mkdir -p ~/.config/tweetkit
-          printf 'auth_token=%s; ct0=%s\n' "$X_AUTH_TOKEN" "$X_CT0" > ~/.config/tweetkit/cookie.txt
+          printf '%s\n' "$X_COOKIE" > ~/.config/tweetkit/cookie.txt
           chmod 600 ~/.config/tweetkit/cookie.txt
 
       - name: Test X login
