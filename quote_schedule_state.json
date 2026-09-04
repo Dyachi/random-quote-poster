@@ -1,1 +1,41 @@
-{}
+{
+  "scheduled_slots": [
+    "2026-09-05T12:00:00+08:00",
+    "2026-09-06T12:00:00+08:00",
+    "2026-09-07T12:00:00+08:00",
+    "2026-09-08T12:00:00+08:00",
+    "2026-09-09T12:00:00+08:00",
+    "2026-09-10T12:00:00+08:00",
+    "2026-09-11T12:00:00+08:00"
+  ],
+  "scheduled_posts": {
+    "2026-09-05T12:00:00+08:00": {
+      "scheduled_id": "2095809943958081536",
+      "quote": "Thanks."
+    },
+    "2026-09-06T12:00:00+08:00": {
+      "scheduled_id": "2095809946868936704",
+      "quote": "Excellent move, Laure... You're the queen of stupid!"
+    },
+    "2026-09-07T12:00:00+08:00": {
+      "scheduled_id": "2095809949800763392",
+      "quote": "Asshole!"
+    },
+    "2026-09-08T12:00:00+08:00": {
+      "scheduled_id": "2095809952761970688",
+      "quote": "Oops."
+    },
+    "2026-09-09T12:00:00+08:00": {
+      "scheduled_id": "2095809955718991872",
+      "quote": "This bar, my stump... I'm getting a feeling of déjà vu!"
+    },
+    "2026-09-10T12:00:00+08:00": {
+      "scheduled_id": "2095809958747213825",
+      "quote": "First, who sets the alarm clock? Me. Then, who deals with yesterday's clothes? Me. Breakfast, who makes that? Me again. Then I take care of the map. I have to make a snack, and then our meals. It's infernal! I can't put up with this guy."
+    },
+    "2026-09-11T12:00:00+08:00": {
+      "scheduled_id": "2095809961821626368",
+      "quote": "Stop battering him! He can't talk with no teeth!"
+    }
+  }
+}
