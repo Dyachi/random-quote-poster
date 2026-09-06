@@ -1,22 +1,14 @@
-name: Random Quote Scheduler
+name: Test X Connection
 
 on:
-  repository_dispatch:
-    types: [schedule_quotes]
-
   workflow_dispatch:
 
 permissions:
-  contents: write
-
-concurrency:
-  group: random-quote-scheduler
-  cancel-in-progress: false
+  contents: read
 
 jobs:
-  schedule-quotes:
-
-    runs-on: ubuntu-latest
+  test-x:
+    runs-on: ubuntu-24.04
 
     timeout-minutes: 10
 
@@ -44,7 +36,7 @@ jobs:
       # 3. 安装 Playwright
       # ============================================================
 
-      - name: Install dependencies
+      - name: Install Playwright
         run: |
           python -m pip install --upgrade pip
           pip install playwright
@@ -60,13 +52,10 @@ jobs:
 
 
       # ============================================================
-      # 5. 检查 Cookie
-      #
-      # 只显示 Cookie 名称
-      # 不显示 Cookie 内容
+      # 5. 测试 X
       # ============================================================
 
-      - name: Check X cookie
+      - name: Test X
         env:
           X_COOKIE: ${{ secrets.X_COOKIE }}
 
@@ -75,29 +64,12 @@ jobs:
           python - <<'PY'
 
           import os
+          from playwright.sync_api import sync_playwright
 
-          cookie = os.environ.get(
-              "X_COOKIE",
-              ""
-          )
-
-          names = []
-
-          for item in cookie.split(";"):
-
-              item = item.strip()
-
-              if "=" in item:
-
-                  name = item.split(
-                      "=",
-                      1
-                  )[0].strip()
-
-                  names.append(name)
+          cookie = os.environ.get("X_COOKIE", "")
 
           print("===================================")
-          print("X COOKIE CHECK")
+          print("X CONNECTION TEST")
           print("===================================")
 
           print(
@@ -107,68 +79,145 @@ jobs:
 
           print()
 
-          print(
-              "auth_token:",
-              "YES"
-              if "auth_token" in names
-              else "NO"
-          )
+          if not cookie:
+              raise RuntimeError(
+                  "没有读取到 X_COOKIE"
+              )
+
+          # --------------------------------------------------------
+          # 解析 Cookie
+          # --------------------------------------------------------
+
+          cookies = []
+
+          for item in cookie.split(";"):
+
+              item = item.strip()
+
+              if "=" not in item:
+                  continue
+
+              name, value = item.split("=", 1)
+
+              cookies.append({
+                  "name": name.strip(),
+                  "value": value.strip(),
+                  "domain": ".x.com",
+                  "path": "/"
+              })
 
           print(
-              "ct0:",
-              "YES"
-              if "ct0" in names
-              else "NO"
+              "Cookie 数量：",
+              len(cookies)
           )
 
-          print(
-              "twid:",
-              "YES"
-              if "twid" in names
-              else "NO"
-          )
+          print()
 
+          # --------------------------------------------------------
+          # 启动 Chromium
+          # --------------------------------------------------------
+
+          with sync_playwright() as p:
+
+              print("启动 Chromium...")
+              print()
+
+              browser = p.chromium.launch(
+                  headless=True
+              )
+
+              context = browser.new_context()
+
+              context.add_cookies(cookies)
+
+              page = context.new_page()
+
+              print("正在访问 X...")
+              print()
+
+              response = page.goto(
+                  "https://x.com/home",
+                  wait_until="domcontentloaded",
+                  timeout=60000
+              )
+
+              if response:
+                  print(
+                      "HTTP 状态：",
+                      response.status
+                  )
+
+              print(
+                  "最终 URL：",
+                  page.url
+              )
+
+              print(
+                  "页面标题：",
+                  page.title()
+              )
+
+              print()
+
+              # ----------------------------------------------------
+              # 判断结果
+              # ----------------------------------------------------
+
+              title = page.title().lower()
+              url = page.url.lower()
+
+              if (
+                  "just a moment" in title
+                  or "challenge" in url
+                  or "captcha" in url
+              ):
+
+                  print("❌ X 返回了 Cloudflare / 验证页面")
+
+              elif "login" in url:
+
+                  print("⚠️ X 要求登录")
+
+              elif "home" in url:
+
+                  print("✅ X 首页可以正常访问")
+
+              else:
+
+                  print(
+                      "⚠️ X 返回了未知页面"
+                  )
+
+              # ----------------------------------------------------
+              # 截取页面文字
+              # ----------------------------------------------------
+
+              try:
+
+                  text = page.locator(
+                      "body"
+                  ).inner_text(
+                      timeout=10000
+                  )
+
+                  print()
+                  print("===================================")
+                  print("页面前 1000 个字符")
+                  print("===================================")
+                  print(text[:1000])
+
+              except Exception as e:
+
+                  print(
+                      "无法读取页面文字：",
+                      e
+                  )
+
+              browser.close()
+
+          print()
+          print("===================================")
+          print("测试结束")
           print("===================================")
 
           PY
-
-
-      # ============================================================
-      # 6. 运行排程
-      # ============================================================
-
-      - name: Schedule random quotes
-        env:
-          X_COOKIE: ${{ secrets.X_COOKIE }}
-
-        run: |
-
-          python quote_poster.py
-
-
-      # ============================================================
-      # 7. 保存状态
-      # ============================================================
-
-      - name: Save schedule state
-        run: |
-
-          git config user.name "github-actions[bot]"
-
-          git config user.email \
-            "41898282+github-actions[bot]@users.noreply.github.com"
-
-          git add quote_schedule_state.json
-
-          if git diff --cached --quiet; then
-
-            echo "没有新的 state 修改，不需要提交。"
-
-          else
-
-            git commit \
-              -m "Update quote schedule state"
-
-            git push
-
-          fi
