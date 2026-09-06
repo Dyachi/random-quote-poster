@@ -45,15 +45,17 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install requests
+          pip install tweetkit-x
 
 
       # ============================================================
       # 4. 检查 X Cookie
-      #    只显示 Cookie 名称
-      #    不会显示 Cookie 的实际内容
+      #
+      # 这里只显示 Cookie 的名称
+      # 不会显示 Cookie 的实际值
       # ============================================================
 
-      - name: Check X cookie names
+      - name: Check X cookie
         env:
           X_COOKIE: ${{ secrets.X_COOKIE }}
         run: |
@@ -75,10 +77,10 @@ jobs:
           print("X COOKIE CHECK")
           print("===================================")
 
-          if not cookie:
-              print("❌ X_COOKIE 没有加载")
+          if cookie:
+              print("X_COOKIE 已加载：YES")
           else:
-              print("✅ X_COOKIE 已加载")
+              print("X_COOKIE 已加载：NO")
 
           print()
           print("Cookie 名称：")
@@ -86,9 +88,10 @@ jobs:
           if names:
               print(", ".join(names))
           else:
-              print("(没有读取到 Cookie 名称)")
+              print("(没有读取到 Cookie)")
 
           print()
+
           print(
               "auth_token:",
               "YES" if "auth_token" in names else "NO"
@@ -105,8 +108,18 @@ jobs:
           )
 
           print(
-              "auth_multi:",
-              "YES" if "auth_multi" in names else "NO"
+              "guest_id:",
+              "YES" if "guest_id" in names else "NO"
+          )
+
+          print(
+              "kdt:",
+              "YES" if "kdt" in names else "NO"
+          )
+
+          print(
+              "personalization_id:",
+              "YES" if "personalization_id" in names else "NO"
           )
 
           print("===================================")
@@ -114,7 +127,53 @@ jobs:
 
 
       # ============================================================
-      # 5. 排程
+      # 5. 检查 tweetkit-x 的认证方式
+      #
+      # 注意：
+      # 这里只打印源码结构
+      # 不打印 Cookie
+      # ============================================================
+
+      - name: Inspect tweetkit authentication
+        run: |
+          python - <<'PY'
+          import inspect
+          import tweetkit_x.client
+
+          print()
+          print("===================================")
+          print("TWEETKIT AUTHENTICATION")
+          print("===================================")
+
+          print()
+          print("----------- _headers() -----------")
+          print()
+
+          print(
+              inspect.getsource(
+                  tweetkit_x.client.TweetKit._headers
+              )
+          )
+
+          print()
+          print("----------- schedule() -----------")
+          print()
+
+          print(
+              inspect.getsource(
+                  tweetkit_x.client.TweetKit.schedule
+              )
+          )
+
+          print()
+          print("===================================")
+          print("END TWEETKIT INSPECTION")
+          print("===================================")
+          PY
+
+
+      # ============================================================
+      # 6. 执行随机语录排程
       # ============================================================
 
       - name: Schedule random quotes
@@ -125,7 +184,7 @@ jobs:
 
 
       # ============================================================
-      # 6. 保存排程状态
+      # 7. 保存排程状态
       # ============================================================
 
       - name: Save schedule state
