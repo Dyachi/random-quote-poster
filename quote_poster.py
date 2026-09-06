@@ -1,9 +1,11 @@
 import json
 import random
-import subprocess
+import os
 from datetime import datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
+
+from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
 
 
 # ============================================================
@@ -112,7 +114,7 @@ def save_state(state):
 
 
 # ============================================================
-# 清理已经过去的排程记录
+# 清理已经过去的排程
 # ============================================================
 
 def cleanup_old_state(state, now):
@@ -137,7 +139,6 @@ def cleanup_old_state(state, now):
 
         except Exception:
 
-            # 无法解析的旧数据直接保留
             remaining[slot_id] = info
 
     state["scheduled_posts"] = remaining
@@ -148,131 +149,340 @@ def cleanup_old_state(state, now):
 
 
 # ============================================================
-# tweetkit 排程
+# X 登录 Cookie
 # ============================================================
 
-def schedule_tweet(text, dt):
-    import os
-    import requests
+def parse_cookie_string(cookie_string):
 
-    timestamp = int(dt.timestamp())
+    cookies = []
 
-    cookie = os.environ.get("X_COOKIE", "").strip()
+    for item in cookie_string.split(";"):
 
-    if not cookie:
-        print("❌ 没有找到 X_COOKIE")
-        return None
-
-    # 从 Cookie 中提取 ct0
-    ct0 = None
-
-    for item in cookie.split(";"):
         item = item.strip()
 
-        if item.startswith("ct0="):
-            ct0 = item.split("=", 1)[1]
-            break
+        if "=" not in item:
+            continue
 
-    if not ct0:
-        print("❌ Cookie 中没有找到 ct0")
-        return None
+        name, value = item.split(
+            "=",
+            1
+        )
 
-    query_id = "LCVzRQGxOaGnOnYH01NQXg"
+        name = name.strip()
+        value = value.strip()
 
-    url = (
-        "https://x.com/i/api/graphql/"
-        f"{query_id}/CreateScheduledTweet"
+        if not name:
+            continue
+
+        cookies.append({
+            "name": name,
+            "value": value,
+            "domain": ".x.com",
+            "path": "/",
+            "secure": True
+        })
+
+    return cookies
+
+
+# ============================================================
+# 检查登录状态
+# ============================================================
+
+def check_login(page):
+
+    print()
+    print("-----------------------------------")
+    print("检查 X 登录状态")
+    print("-----------------------------------")
+
+    page.goto(
+        "https://x.com/home",
+        wait_until="domcontentloaded",
+        timeout=60000
     )
 
-    variables = {
-        "post_tweet_request": {
-            "auto_populate_reply_metadata": False,
-            "status": text,
-            "exclude_reply_user_ids": [],
-            "media_ids": []
-        },
-        "execute_at": timestamp
-    }
+    page.wait_for_timeout(5000)
 
-    payload = {
-        "variables": variables,
-        "queryId": query_id
-    }
-
-    headers = {
-        "authorization": (
-            "Bearer "
-            "AAAAAAAAAAAAAAAAAAAA"
-            "NRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs"
-            "%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA"
-        ),
-        "cookie": cookie,
-        "x-csrf-token": ct0,
-        "x-twitter-active-user": "yes",
-        "x-twitter-auth-type": "OAuth2Session",
-        "x-twitter-client-language": "en",
-        "content-type": "application/json",
-        "accept": "*/*",
-        "accept-language": "en-US,en;q=0.9",
-        "origin": "https://x.com",
-        "referer": "https://x.com/home",
-        "user-agent": (
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Chrome/131.0.0.0 Safari/537.36"
-        )
-    }
-
-    try:
-        response = requests.post(
-            url,
-            headers=headers,
-            json=payload,
-            timeout=30
-        )
-    except Exception as error:
-        print("❌ X 请求失败")
-        print(error)
-        return None
+    current_url = page.url
 
     print(
-        f"X CreateScheduledTweet HTTP {response.status_code}"
+        f"X 当前页面：{current_url}"
+    )
+
+    # Cloudflare / 验证页面
+    title = page.title()
+
+    print(
+        f"页面标题：{title}"
+    )
+
+    if "Just a moment" in title:
+
+        raise RuntimeError(
+            "X 返回了 Cloudflare 验证页面。"
+        )
+
+    # 如果仍然在登录页面
+    if "/i/flow/login" in current_url:
+
+        raise RuntimeError(
+            "X 登录状态无效，Cookie 已失效。"
+        )
+
+    print("✅ X 登录状态看起来正常。")
+
+
+# ============================================================
+# Playwright 创建 X 排程
+# ============================================================
+
+def schedule_tweet(
+    page,
+    text,
+    dt
+):
+
+    print()
+    print("-----------------------------------")
+    print("开始通过 X 网页创建排程")
+    print("-----------------------------------")
+
+    print(
+        f"目标时间：{dt.strftime('%Y-%m-%d %H:%M:%S')}"
+    )
+
+    print(
+        f"内容：{text}"
+    )
+
+    # --------------------------------------------------------
+    # 打开 X 首页
+    # --------------------------------------------------------
+
+    page.goto(
+        "https://x.com/home",
+        wait_until="domcontentloaded",
+        timeout=60000
+    )
+
+    page.wait_for_timeout(3000)
+
+    # --------------------------------------------------------
+    # 打开发帖窗口
+    # --------------------------------------------------------
+
+    compose_button = page.locator(
+        '[data-testid="SideNav_NewTweet_Button"]'
     )
 
     try:
-        data = response.json()
-    except Exception:
-        print("❌ X 返回的不是 JSON：")
-        print(response.text[:1000])
-        return None
 
-    if data.get("errors"):
-        print("❌ X 排程接口返回错误：")
+        compose_button.wait_for(
+            state="visible",
+            timeout=30000
+        )
 
-        for error in data["errors"]:
-            print(
-                error.get(
-                    "message",
-                    str(error)
-                )
-            )
+        compose_button.click()
 
-        return None
+    except PlaywrightTimeoutError:
+
+        raise RuntimeError(
+            "找不到 X 的发帖按钮。"
+        )
+
+    page.wait_for_timeout(1500)
+
+    # --------------------------------------------------------
+    # 输入语录
+    # --------------------------------------------------------
+
+    tweet_input = page.locator(
+        '[data-testid="tweetTextarea_0"]'
+    )
 
     try:
-        scheduled_id = (
-            data["data"]["tweet"]["rest_id"]
-        )
-    except Exception:
-        print("❌ 无法从 X 返回值中找到 scheduled_id：")
-        print(json.dumps(
-            data,
-            ensure_ascii=False,
-            indent=2
-        ))
-        return None
 
-    print("✅ 排程成功")
+        tweet_input.wait_for(
+            state="visible",
+            timeout=30000
+        )
+
+        tweet_input.fill(text)
+
+    except PlaywrightTimeoutError:
+
+        raise RuntimeError(
+            "找不到 X 的发帖输入框。"
+        )
+
+    page.wait_for_timeout(500)
+
+    # --------------------------------------------------------
+    # 点击排程按钮
+    # --------------------------------------------------------
+
+    schedule_button = page.locator(
+        '[data-testid="scheduleOption"]'
+    )
+
+    try:
+
+        schedule_button.wait_for(
+            state="visible",
+            timeout=15000
+        )
+
+        schedule_button.click()
+
+    except PlaywrightTimeoutError:
+
+        raise RuntimeError(
+            "找不到 X 的排程按钮。"
+        )
+
+    page.wait_for_timeout(1000)
+
+    # --------------------------------------------------------
+    # 设置日期
+    # --------------------------------------------------------
+
+    date_string = dt.strftime(
+        "%Y-%m-%d"
+    )
+
+    time_string = dt.strftime(
+        "%H:%M"
+    )
+
+    date_input = page.locator(
+        '[data-testid="scheduledDateField"]'
+    )
+
+    time_input = page.locator(
+        '[data-testid="scheduledTimeField"]'
+    )
+
+    try:
+
+        date_input.wait_for(
+            state="visible",
+            timeout=15000
+        )
+
+    except PlaywrightTimeoutError:
+
+        raise RuntimeError(
+            "找不到 X 的日期输入框。"
+        )
+
+    # 日期
+    try:
+
+        date_input.fill(
+            date_string
+        )
+
+    except Exception:
+
+        # 某些版本的 X 使用原生 input
+        page.evaluate(
+            """([selector, value]) => {
+                const el = document.querySelector(selector);
+                if (!el) return false;
+
+                const setter =
+                    Object.getOwnPropertyDescriptor(
+                        HTMLInputElement.prototype,
+                        "value"
+                    ).set;
+
+                setter.call(el, value);
+
+                el.dispatchEvent(
+                    new Event("input", {bubbles: true})
+                );
+
+                el.dispatchEvent(
+                    new Event("change", {bubbles: true})
+                );
+
+                return true;
+            }""",
+            [
+                '[data-testid="scheduledDateField"]',
+                date_string
+            ]
+        )
+
+    # 时间
+    try:
+
+        time_input.fill(
+            time_string
+        )
+
+    except Exception:
+
+        page.evaluate(
+            """([selector, value]) => {
+                const el = document.querySelector(selector);
+                if (!el) return false;
+
+                const setter =
+                    Object.getOwnPropertyDescriptor(
+                        HTMLInputElement.prototype,
+                        "value"
+                    ).set;
+
+                setter.call(el, value);
+
+                el.dispatchEvent(
+                    new Event("input", {bubbles: true})
+                );
+
+                el.dispatchEvent(
+                    new Event("change", {bubbles: true})
+                );
+
+                return true;
+            }""",
+            [
+                '[data-testid="scheduledTimeField"]',
+                time_string
+            ]
+        )
+
+    page.wait_for_timeout(500)
+
+    # --------------------------------------------------------
+    # 点击确认排程
+    # --------------------------------------------------------
+
+    confirm_button = page.locator(
+        '[data-testid="scheduledConfirmationPrimaryAction"]'
+    )
+
+    try:
+
+        confirm_button.wait_for(
+            state="visible",
+            timeout=15000
+        )
+
+        confirm_button.click()
+
+    except PlaywrightTimeoutError:
+
+        raise RuntimeError(
+            "找不到 X 的最终排程确认按钮。"
+        )
+
+    # 等待 X 完成请求
+    page.wait_for_timeout(3000)
+
+    print()
+    print("✅ X 网页排程操作已完成")
 
     print(
         f"   时间：{dt.strftime('%Y-%m-%d %H:%M:%S')}"
@@ -282,11 +492,14 @@ def schedule_tweet(text, dt):
         f"   内容：{text}"
     )
 
-    print(
-        f"   ID：{scheduled_id}"
-    )
+    # --------------------------------------------------------
+    # 返回一个本地标识
+    #
+    # 网页 UI 不一定直接把 scheduled_id 暴露给我们，
+    # 所以这里使用时间作为 state 标识。
+    # --------------------------------------------------------
 
-    return scheduled_id
+    return f"web-{dt.strftime('%Y%m%d%H%M%S')}"
 
 
 # ============================================================
@@ -316,7 +529,7 @@ def make_datetime(
 
 
 # ============================================================
-# 每日模式
+# 每日
 # ============================================================
 
 def generate_daily(
@@ -349,6 +562,7 @@ def generate_daily(
             )
 
             if now < dt <= end_time:
+
                 result.append(dt)
 
         current_date += timedelta(
@@ -359,7 +573,7 @@ def generate_daily(
 
 
 # ============================================================
-# 每周模式
+# 每周
 # ============================================================
 
 def generate_weekly(
@@ -403,6 +617,7 @@ def generate_weekly(
                 )
 
                 if now < dt <= end_time:
+
                     result.append(dt)
 
         current_date += timedelta(
@@ -413,7 +628,7 @@ def generate_weekly(
 
 
 # ============================================================
-# 每月模式
+# 每月
 # ============================================================
 
 def generate_monthly(
@@ -453,6 +668,7 @@ def generate_monthly(
                 )
 
                 if now < dt <= end_time:
+
                     result.append(dt)
 
         current_date += timedelta(
@@ -463,7 +679,7 @@ def generate_monthly(
 
 
 # ============================================================
-# 每年模式
+# 每年
 # ============================================================
 
 def generate_yearly(
@@ -507,6 +723,7 @@ def generate_yearly(
                 )
 
                 if now < dt <= end_time:
+
                     result.append(dt)
 
         current_date += timedelta(
@@ -517,7 +734,7 @@ def generate_yearly(
 
 
 # ============================================================
-# 固定间隔模式
+# 固定间隔
 # ============================================================
 
 def generate_interval(
@@ -562,7 +779,7 @@ def generate_interval(
 
 
 # ============================================================
-# 随机间隔模式
+# 随机间隔
 # ============================================================
 
 def generate_random_interval(
@@ -618,6 +835,7 @@ def generate_random_interval(
         )
 
         if current > end_time:
+
             break
 
         result.append(current)
@@ -626,7 +844,7 @@ def generate_random_interval(
 
 
 # ============================================================
-# 根据设置生成所有时间
+# 生成排程
 # ============================================================
 
 def generate_schedule_times(
@@ -719,7 +937,7 @@ def generate_schedule_times(
 
 
 # ============================================================
-# 开始排程
+# 主排程
 # ============================================================
 
 def schedule_future_quotes(
@@ -739,10 +957,6 @@ def schedule_future_quotes(
     now = datetime.now(
         timezone
     )
-
-    # --------------------------------------------------------
-    # 清理已经过去的记录
-    # --------------------------------------------------------
 
     cleanup_old_state(
         state,
@@ -782,73 +996,170 @@ def schedule_future_quotes(
     )
 
     created_count = 0
-
     skipped_count = 0
-
     failed_count = 0
 
     # --------------------------------------------------------
-    # 创建排程
+    # Cookie
     # --------------------------------------------------------
 
-    for post_dt in schedule_times:
+    cookie_string = os.environ.get(
+        "X_COOKIE",
+        ""
+    ).strip()
 
-        slot_id = post_dt.isoformat()
+    if not cookie_string:
 
-        # 已经存在的排程直接跳过
-        if slot_id in scheduled_slots:
-
-            skipped_count += 1
-
-            continue
-
-        quote = random.choice(
-            quotes
+        raise RuntimeError(
+            "没有找到 X_COOKIE。"
         )
+
+    cookies = parse_cookie_string(
+        cookie_string
+    )
+
+    if not any(
+        c["name"] == "auth_token"
+        for c in cookies
+    ):
+
+        raise RuntimeError(
+            "X_COOKIE 中没有 auth_token。"
+        )
+
+    if not any(
+        c["name"] == "ct0"
+        for c in cookies
+    ):
+
+        raise RuntimeError(
+            "X_COOKIE 中没有 ct0。"
+        )
+
+    # --------------------------------------------------------
+    # 启动 Chromium
+    # --------------------------------------------------------
+
+    with sync_playwright() as playwright:
 
         print()
-        print(
-            "-----------------------------------"
+        print("-----------------------------------")
+        print("启动 Chromium")
+        print("-----------------------------------")
+
+        browser = playwright.chromium.launch(
+            headless=True,
+            args=[
+                "--disable-blink-features=AutomationControlled",
+                "--no-sandbox",
+                "--disable-dev-shm-usage"
+            ]
         )
 
-        print(
-            f"准备排程：{post_dt.strftime('%Y-%m-%d %H:%M:%S')}"
+        context = browser.new_context(
+            locale="en-US",
+            timezone_id="Asia/Taipei",
+            viewport={
+                "width": 1440,
+                "height": 900
+            },
+            user_agent=(
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/131.0.0.0 Safari/537.36"
+            )
         )
 
-        print(
-            f"随机语录：{quote}"
+        context.add_cookies(
+            cookies
         )
 
-        scheduled_id = schedule_tweet(
-            quote,
-            post_dt
+        page = context.new_page()
+
+        # ----------------------------------------------------
+        # 检查登录
+        # ----------------------------------------------------
+
+        check_login(
+            page
         )
 
-        if scheduled_id:
+        # ----------------------------------------------------
+        # 创建排程
+        # ----------------------------------------------------
 
-            created_count += 1
+        for post_dt in schedule_times:
 
-            scheduled_slots.add(
-                slot_id
+            slot_id = post_dt.isoformat()
+
+            if slot_id in scheduled_slots:
+
+                skipped_count += 1
+
+                continue
+
+            quote = random.choice(
+                quotes
             )
 
-            state["scheduled_slots"] = sorted(
-                scheduled_slots
+            print()
+            print(
+                "-----------------------------------"
             )
 
-            state["scheduled_posts"][slot_id] = {
-                "scheduled_id": scheduled_id,
-                "quote": quote
-            }
-
-            # 每成功创建一个就保存一次
-            save_state(
-                state
+            print(
+                f"准备排程：{post_dt.strftime('%Y-%m-%d %H:%M:%S')}"
             )
 
-        else:
+            print(
+                f"随机语录：{quote}"
+            )
 
-            failed_count += 1
+            try:
+
+                scheduled_id = schedule_tweet(
+                    page,
+                    quote,
+                    post_dt
+                )
+
+            except Exception as error:
+
+                print()
+                print(
+                    "❌ 排程失败："
+                )
+
+                print(
+                    str(error)
+                )
+
+                failed_count += 1
+
+                continue
+
+            if scheduled_id:
+
+                created_count += 1
+
+                scheduled_slots.add(
+                    slot_id
+                )
+
+                state["scheduled_slots"] = sorted(
+                    scheduled_slots
+                )
+
+                state["scheduled_posts"][slot_id] = {
+                    "scheduled_id": scheduled_id,
+                    "quote": quote
+                }
+
+                save_state(
+                    state
+                )
+
+        browser.close()
 
     # --------------------------------------------------------
     # 最终保存
@@ -866,9 +1177,11 @@ def schedule_future_quotes(
     print(
         "==================================="
     )
+
     print(
         "排程处理完成"
     )
+
     print(
         "==================================="
     )
@@ -941,5 +1254,4 @@ if __name__ == "__main__":
             e
         )
 
-        # 让 GitHub Actions 正确识别为失败
         raise
