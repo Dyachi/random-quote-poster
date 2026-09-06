@@ -37,20 +37,14 @@ jobs:
           import inspect
           import x_client_transaction.utils
 
-          print(inspect.getsource(x_client_transaction.utils.get_ondemand_file_url))
+          print("===================================")
+          print("get_ondemand_file_url SOURCE")
+          print("===================================")
+          print(inspect.getsource(
+              x_client_transaction.utils.get_ondemand_file_url
+          ))
+          print("===================================")
           PY
-
-      - name: Inspect tweetkit
-        run: |
-          python -c "import tweetkit_x.client, inspect; print(inspect.getfile(tweetkit_x.client))"
-          python -c "import x_client_transaction.utils, inspect; print(inspect.getfile(x_client_transaction.utils))"
-
-      - name: Configure X session
-
-      - name: Inspect tweetkit
-        run: |
-          python -c "import tweetkit_x.client, inspect; print(inspect.getfile(tweetkit_x.client))"
-          python -c "import x_client_transaction.utils, inspect; print(inspect.getfile(x_client_transaction.utils))"
 
       - name: Configure X session
         env:
