@@ -152,75 +152,124 @@ def cleanup_old_state(state, now):
 # ============================================================
 
 def schedule_tweet(text, dt):
+    import os
+    import requests
 
-    timestamp = int(
-        dt.timestamp()
+    timestamp = int(dt.timestamp())
+
+    cookie = os.environ.get("X_COOKIE", "").strip()
+
+    if not cookie:
+        print("❌ 没有找到 X_COOKIE")
+        return None
+
+    # 从 Cookie 中提取 ct0
+    ct0 = None
+
+    for item in cookie.split(";"):
+        item = item.strip()
+
+        if item.startswith("ct0="):
+            ct0 = item.split("=", 1)[1]
+            break
+
+    if not ct0:
+        print("❌ Cookie 中没有找到 ct0")
+        return None
+
+    query_id = "LCVzRQGxOaGnOnYH01NQXg"
+
+    url = (
+        "https://x.com/i/api/graphql/"
+        f"{query_id}/CreateScheduledTweet"
     )
 
-    result = subprocess.run(
-        [
-            "tweetkit",
-            "schedule",
-            text,
-            str(timestamp)
-        ],
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace"
+    variables = {
+        "post_tweet_request": {
+            "auto_populate_reply_metadata": False,
+            "status": text,
+            "exclude_reply_user_ids": [],
+            "media_ids": []
+        },
+        "execute_at": timestamp
+    }
+
+    payload = {
+        "variables": variables,
+        "queryId": query_id
+    }
+
+    headers = {
+        "authorization": (
+            "Bearer "
+            "AAAAAAAAAAAAAAAAAAAA"
+            "NRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs"
+            "%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA"
+        ),
+        "cookie": cookie,
+        "x-csrf-token": ct0,
+        "x-twitter-active-user": "yes",
+        "x-twitter-auth-type": "OAuth2Session",
+        "x-twitter-client-language": "en",
+        "content-type": "application/json",
+        "accept": "*/*",
+        "accept-language": "en-US,en;q=0.9",
+        "origin": "https://x.com",
+        "referer": "https://x.com/home",
+        "user-agent": (
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/131.0.0.0 Safari/537.36"
+        )
+    }
+
+    try:
+        response = requests.post(
+            url,
+            headers=headers,
+            json=payload,
+            timeout=30
+        )
+    except Exception as error:
+        print("❌ X 请求失败")
+        print(error)
+        return None
+
+    print(
+        f"X CreateScheduledTweet HTTP {response.status_code}"
     )
 
-    if result.returncode != 0:
+    try:
+        data = response.json()
+    except Exception:
+        print("❌ X 返回的不是 JSON：")
+        print(response.text[:1000])
+        return None
 
-        print("❌ 排程失败")
+    if data.get("errors"):
+        print("❌ X 排程接口返回错误：")
 
-        if result.stderr.strip():
+        for error in data["errors"]:
             print(
-                result.stderr.strip()
+                error.get(
+                    "message",
+                    str(error)
+                )
             )
 
         return None
 
-    if not result.stdout.strip():
-
-        print(
-            "⚠️ tweetkit 没有返回结果。"
-        )
-
-        return None
-
     try:
-
-        data = json.loads(
-            result.stdout
+        scheduled_id = (
+            data["data"]["tweet"]["rest_id"]
         )
-
-    except json.JSONDecodeError:
-
-        print(
-            "⚠️ 无法解析 tweetkit 返回的数据："
-        )
-
-        print(
-            result.stdout
-        )
-
-        return None
-
-    scheduled_id = data.get(
-        "scheduled_id"
-    )
-
-    if not scheduled_id:
-
-        print(
-            "⚠️ 没有获得 scheduled_id："
-        )
-
-        print(
-            result.stdout
-        )
-
+    except Exception:
+        print("❌ 无法从 X 返回值中找到 scheduled_id：")
+        print(json.dumps(
+            data,
+            ensure_ascii=False,
+            indent=2
+        ))
         return None
 
     print("✅ 排程成功")
