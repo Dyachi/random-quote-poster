@@ -18,8 +18,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
       # ==============================
-      # 1. 获取仓库代码
+      # 1. 获取仓库
       # ==============================
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -33,149 +34,33 @@ jobs:
           python-version: "3.12"
 
       # ==============================
-      # 3. 安装 tweetkit-x
+      # 3. 安装 requests
       # ==============================
-      - name: Install tweetkit-x
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install "git+https://github.com/nsozturk/tweetkit-x.git"
+          pip install requests
 
       # ==============================
-      # 4. 检查 X 首页
-      # ==============================
-      - name: Diagnose X homepage
-        run: |
-          python - <<'PY'
-          import requests
-
-          url = "https://x.com/home"
-
-          headers = {
-              "User-Agent": (
-                  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-                  "AppleWebKit/537.36 (KHTML, like Gecko) "
-                  "Chrome/131.0.0.0 Safari/537.36"
-              ),
-              "Accept": (
-                  "text/html,application/xhtml+xml,"
-                  "application/xml;q=0.9,*/*;q=0.8"
-              ),
-              "Accept-Language": "en-US,en;q=0.9",
-          }
-
-          r = requests.get(
-              url,
-              headers=headers,
-              timeout=30,
-              allow_redirects=True
-          )
-
-          print("===================================")
-          print("X HOMEPAGE DIAGNOSTIC")
-          print("===================================")
-          print("Status:", r.status_code)
-          print("Final URL:", r.url)
-          print("Content-Type:", r.headers.get("content-type"))
-          print("Content-Length:", len(r.text))
-
-          print()
-          print("===================================")
-          print("SEARCH ondemand.s")
-          print("===================================")
-
-          if "ondemand.s" in r.text:
-              print("FOUND: ondemand.s")
-
-              index = r.text.find("ondemand.s")
-
-              print()
-              print(
-                  r.text[
-                      max(0, index - 300):
-                      index + 800
-                  ]
-              )
-          else:
-              print("NOT FOUND: ondemand.s")
-
-          print()
-          print("===================================")
-          print("HTML BEGINNING")
-          print("===================================")
-
-          print(r.text[:3000])
-          PY
-
-      # ==============================
-      # 5. 查看 tweetkit 使用的解析函数
-      # ==============================
-      - name: Show transaction utils
-        run: |
-          python - <<'PY'
-          import inspect
-          import x_client_transaction.utils
-
-          print("===================================")
-          print("get_ondemand_file_url SOURCE")
-          print("===================================")
-
-          print(
-              inspect.getsource(
-                  x_client_transaction.utils.get_ondemand_file_url
-              )
-          )
-
-          print()
-          print("===================================")
-          print("TRANSACTION CONSTANTS")
-          print("===================================")
-
-          print(
-              "ON_DEMAND_FILE_REGEX =",
-              x_client_transaction.utils.ON_DEMAND_FILE_REGEX
-          )
-
-          print(
-              "ON_DEMAND_HASH_PATTERN =",
-              x_client_transaction.utils.ON_DEMAND_HASH_PATTERN
-          )
-
-          print(
-              "ON_DEMAND_FILE_URL =",
-              x_client_transaction.utils.ON_DEMAND_FILE_URL
-          )
-          PY
-
-      # ==============================
-      # 6. 写入 X Cookie
+      # 4. 设置 X Cookie
       # ==============================
       - name: Configure X session
         env:
           X_COOKIE: ${{ secrets.X_COOKIE }}
         run: |
-          mkdir -p ~/.config/tweetkit
-
-          printf '%s\n' "$X_COOKIE" \
-            > ~/.config/tweetkit/cookie.txt
-
-          chmod 600 ~/.config/tweetkit/cookie.txt
+          echo "X Cookie 已加载。"
 
       # ==============================
-      # 7. 检查 X 登录状态
-      # ==============================
-      - name: Check X login
-        run: |
-          tweetkit whoami
-
-      # ==============================
-      # 8. 执行随机语录排程
+      # 5. 随机语录排程
       # ==============================
       - name: Schedule random quotes
+        env:
+          X_COOKIE: ${{ secrets.X_COOKIE }}
         run: |
           python quote_poster.py
 
       # ==============================
-      # 9. 保存排程状态
+      # 6. 保存排程状态
       # ==============================
       - name: Save schedule state
         run: |
