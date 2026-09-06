@@ -15,7 +15,10 @@ concurrency:
 
 jobs:
   schedule-quotes:
+
     runs-on: ubuntu-latest
+
+    timeout-minutes: 10
 
     steps:
 
@@ -28,7 +31,7 @@ jobs:
 
 
       # ============================================================
-      # 2. 安装 Python
+      # 2. Python
       # ============================================================
 
       - name: Set up Python
@@ -38,165 +41,134 @@ jobs:
 
 
       # ============================================================
-      # 3. 安装依赖
+      # 3. 安装 Playwright
       # ============================================================
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install requests
-          pip install tweetkit-x
+          pip install playwright
 
 
       # ============================================================
-      # 4. 检查 X Cookie
+      # 4. 安装 Chromium
+      # ============================================================
+
+      - name: Install Chromium
+        run: |
+          python -m playwright install --with-deps chromium
+
+
+      # ============================================================
+      # 5. 检查 Cookie
       #
-      # 这里只显示 Cookie 的名称
-      # 不会显示 Cookie 的实际值
+      # 只显示 Cookie 名称
+      # 不显示 Cookie 内容
       # ============================================================
 
       - name: Check X cookie
         env:
           X_COOKIE: ${{ secrets.X_COOKIE }}
+
         run: |
+
           python - <<'PY'
+
           import os
 
-          cookie = os.environ.get("X_COOKIE", "")
+          cookie = os.environ.get(
+              "X_COOKIE",
+              ""
+          )
 
           names = []
 
           for item in cookie.split(";"):
+
               item = item.strip()
 
               if "=" in item:
-                  name = item.split("=", 1)[0].strip()
+
+                  name = item.split(
+                      "=",
+                      1
+                  )[0].strip()
+
                   names.append(name)
 
           print("===================================")
           print("X COOKIE CHECK")
           print("===================================")
 
-          if cookie:
-              print("X_COOKIE 已加载：YES")
-          else:
-              print("X_COOKIE 已加载：NO")
-
-          print()
-          print("Cookie 名称：")
-
-          if names:
-              print(", ".join(names))
-          else:
-              print("(没有读取到 Cookie)")
+          print(
+              "X_COOKIE 已加载：",
+              "YES" if cookie else "NO"
+          )
 
           print()
 
           print(
               "auth_token:",
-              "YES" if "auth_token" in names else "NO"
+              "YES"
+              if "auth_token" in names
+              else "NO"
           )
 
           print(
               "ct0:",
-              "YES" if "ct0" in names else "NO"
+              "YES"
+              if "ct0" in names
+              else "NO"
           )
 
           print(
               "twid:",
-              "YES" if "twid" in names else "NO"
-          )
-
-          print(
-              "guest_id:",
-              "YES" if "guest_id" in names else "NO"
-          )
-
-          print(
-              "kdt:",
-              "YES" if "kdt" in names else "NO"
-          )
-
-          print(
-              "personalization_id:",
-              "YES" if "personalization_id" in names else "NO"
+              "YES"
+              if "twid" in names
+              else "NO"
           )
 
           print("===================================")
+
           PY
 
 
       # ============================================================
-      # 5. 检查 tweetkit-x 的认证方式
-      #
-      # 注意：
-      # 这里只打印源码结构
-      # 不打印 Cookie
-      # ============================================================
-
-      - name: Inspect tweetkit authentication
-        run: |
-          python - <<'PY'
-          import inspect
-          import tweetkit_x.client
-
-          print()
-          print("===================================")
-          print("TWEETKIT AUTHENTICATION")
-          print("===================================")
-
-          print()
-          print("----------- _headers() -----------")
-          print()
-
-          print(
-              inspect.getsource(
-                  tweetkit_x.client.TweetKit._headers
-              )
-          )
-
-          print()
-          print("----------- schedule() -----------")
-          print()
-
-          print(
-              inspect.getsource(
-                  tweetkit_x.client.TweetKit.schedule
-              )
-          )
-
-          print()
-          print("===================================")
-          print("END TWEETKIT INSPECTION")
-          print("===================================")
-          PY
-
-
-      # ============================================================
-      # 6. 执行随机语录排程
+      # 6. 运行排程
       # ============================================================
 
       - name: Schedule random quotes
         env:
           X_COOKIE: ${{ secrets.X_COOKIE }}
+
         run: |
+
           python quote_poster.py
 
 
       # ============================================================
-      # 7. 保存排程状态
+      # 7. 保存状态
       # ============================================================
 
       - name: Save schedule state
         run: |
+
           git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git config user.email \
+            "41898282+github-actions[bot]@users.noreply.github.com"
 
           git add quote_schedule_state.json
 
           if git diff --cached --quiet; then
+
             echo "没有新的 state 修改，不需要提交。"
+
           else
-            git commit -m "Update quote schedule state"
+
+            git commit \
+              -m "Update quote schedule state"
+
             git push
+
           fi
