@@ -1,0 +1,265 @@
+name: Test X ARM64
+
+on:
+  workflow_dispatch:
+
+jobs:
+
+  test-x:
+
+    runs-on: ubuntu-24.04-arm
+
+    timeout-minutes: 10
+
+    steps:
+
+      # ============================================
+      # 1. 获取仓库
+      # ============================================
+
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+
+      # ============================================
+      # 2. Python
+      # ============================================
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+
+      # ============================================
+      # 3. 安装 Playwright
+      # ============================================
+
+      - name: Install Playwright
+        run: |
+          python -m pip install --upgrade pip
+          pip install playwright
+
+
+      # ============================================
+      # 4. 安装 Chromium
+      # ============================================
+
+      - name: Install Chromium
+        run: |
+          python -m playwright install --with-deps chromium
+
+
+      # ============================================
+      # 5. 检查 Cookie
+      # ============================================
+
+      - name: Check X cookie
+        env:
+          X_COOKIE: ${{ secrets.X_COOKIE }}
+
+        run: |
+
+          python - <<'PY'
+
+          import os
+
+          cookie = os.environ.get("X_COOKIE", "")
+
+          names = []
+
+          for item in cookie.split(";"):
+
+              item = item.strip()
+
+              if "=" in item:
+
+                  name = item.split("=", 1)[0].strip()
+
+                  names.append(name)
+
+          print("===================================")
+          print("X COOKIE CHECK")
+          print("===================================")
+
+          print(
+              "X_COOKIE 已加载：",
+              "YES" if cookie else "NO"
+          )
+
+          print(
+              "auth_token:",
+              "YES" if "auth_token" in names else "NO"
+          )
+
+          print(
+              "ct0:",
+              "YES" if "ct0" in names else "NO"
+          )
+
+          print(
+              "twid:",
+              "YES" if "twid" in names else "NO"
+          )
+
+          print("===================================")
+
+          PY
+
+
+      # ============================================
+      # 6. 测试访问 X
+      # ============================================
+
+      - name: Test X with Chromium
+        env:
+          X_COOKIE: ${{ secrets.X_COOKIE }}
+
+        run: |
+
+          python - <<'PY'
+
+          import os
+          import asyncio
+
+          from playwright.async_api import async_playwright
+
+
+          async def main():
+
+              cookie_string = os.environ.get(
+                  "X_COOKIE",
+                  ""
+              )
+
+              cookies = []
+
+              for item in cookie_string.split(";"):
+
+                  item = item.strip()
+
+                  if "=" not in item:
+                      continue
+
+                  name, value = item.split(
+                      "=",
+                      1
+                  )
+
+                  cookies.append({
+                      "name": name.strip(),
+                      "value": value.strip(),
+                      "domain": ".x.com",
+                      "path": "/"
+                  })
+
+
+              print("===================================")
+              print("X ARM64 ACCESS TEST")
+              print("===================================")
+
+              print(
+                  "Cookie 数量：",
+                  len(cookies)
+              )
+
+              print(
+                  "启动 Chromium..."
+              )
+
+
+              async with async_playwright() as p:
+
+                  browser = await p.chromium.launch(
+                      headless=True
+                  )
+
+                  context = await browser.new_context(
+                      viewport={
+                          "width": 1280,
+                          "height": 720
+                      }
+                  )
+
+                  if cookies:
+
+                      await context.add_cookies(
+                          cookies
+                      )
+
+
+                  page = await context.new_page()
+
+                  print(
+                      "正在访问 X..."
+                  )
+
+                  response = await page.goto(
+                      "https://x.com/home",
+                      wait_until="domcontentloaded",
+                      timeout=60000
+                  )
+
+
+                  if response:
+
+                      print(
+                          "HTTP 状态：",
+                          response.status
+                      )
+
+                  else:
+
+                      print(
+                          "HTTP 状态：未知"
+                      )
+
+
+                  print(
+                      "最终 URL:",
+                      page.url
+                  )
+
+                  print(
+                      "页面标题:",
+                      await page.title()
+                  )
+
+
+                  content = await page.content()
+
+                  print()
+
+
+                  if (
+                      "Just a moment" in content
+                      or "cf-chl" in content
+                      or "Cloudflare" in content
+                  ):
+
+                      print(
+                          "❌ 检测到 Cloudflare / 验证页面"
+                      )
+
+                  elif response and response.status == 200:
+
+                      print(
+                          "✅ X 页面访问成功"
+                      )
+
+                  else:
+
+                      print(
+                          "⚠️ X 返回了非预期结果"
+                      )
+
+
+                  print("===================================")
+
+
+                  await browser.close()
+
+
+          asyncio.run(main())
+
+          PY
